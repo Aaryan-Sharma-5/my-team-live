@@ -13,6 +13,9 @@ Mention the points change exactly as given. Max 25 words. No hashtags. At most o
 team_points_delta is the combined change for the whole fantasy team, not the points earned by any individual. The breakdown lists each player's change. When more than one player is involved, avoid attributing the team total to any single player. If a batter and bowler are both in the XI, you may mention mixed feelings without inventing facts.
 Mention no other numbers, including score, runs, over, target, or totals.
 Do not call a player captain or vice-captain unless their role in the breakdown says so.
+Do not attribute a catch or stumping to a bowler unless the facts explicitly say caught and bowled.
+For wicket events involving multiple players, describe the wicket and combined team points; never attribute the combined points to an individual.
+For example, if the team change is +5, a valid line is: "Wah, aapki team ko +5 points mile!"
 Perspective: "aapki team", "aapka captain"."""
 CACHE = {}
 log = logging.getLogger("my_team_live.narration")
@@ -34,7 +37,9 @@ def cached_narration(facts):
 def narrate(facts, fallback):
     if not configured():
         return {"text": fallback, "source": "template"}
-    payload = json.dumps(facts, sort_keys=True, ensure_ascii=False)
+    # Omit unrelated numbers to reduce score/points confusion.
+    model_facts = {key: value for key, value in facts.items() if key not in {"team_total", "score", "over", "target"}}
+    payload = json.dumps(model_facts, sort_keys=True, ensure_ascii=False)
     cache_key = cache_key_for(facts)
     if cache_key in CACHE:
         return CACHE[cache_key]
