@@ -31,7 +31,7 @@ Cricsheet JSON → `ingest.py` normalizes deliveries → `scoring.py` calculates
 
 Selected events can be narrated by OpenAI GPT-OSS 20B via Groq and `/api/narrate`; the API key stays on the server. Output is checked for the supplied points figure and word limit. A missing key, timeout, API error, rate limit or failed check returns a deterministic template. The optional integration is configured by setting `GROQ_API_KEY` in the server environment; do not put keys in the frontend or commit them. `ALLOWED_ORIGINS` may be set to comma-separated origins if serving the frontend separately. The default same-origin setup does not need it.
 
-The API integration and fallback are covered with mocked responses, but a real Groq request has not yet been verified with a key. The model's wording is constrained by a prompt and a basic number check; this is not a guarantee that every generated claim is correct.
+The integration and fallback are covered with mocked responses, and a real Groq request was verified on the deployed app. The model's wording is constrained by a prompt and checks on its numbers and role; these checks do not guarantee every generated claim is correct.
 
 ## Container
 

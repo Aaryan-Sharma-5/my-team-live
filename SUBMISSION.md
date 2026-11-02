@@ -8,4 +8,3 @@ My Team Live replays the 2023 IPL final from the perspective of a chosen XI. Fan
 
 The scoring is deterministic Python code. An optional GPT-OSS 20B integration via Groq turns selected structured match events into short Hinglish updates; a template fallback keeps the replay working without an API key or if the service fails. I used Codex to help build and test the app.
 
-**Before submitting:** configure a Groq key and verify a real narration if describing the AI integration as working in the deployed version.
