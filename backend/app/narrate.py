@@ -48,5 +48,13 @@ def narrate(facts, fallback):
         return result
     except Exception as exc:
         # Log only the failure category/status, never the key or model response.
-        log.warning("Groq narration fallback: %s status=%s", type(exc).__name__, getattr(exc, "code", "n/a"))
+        error_code = "unknown"
+        if isinstance(exc, urllib.error.HTTPError):
+            try:
+                candidate = json.load(exc).get("error", {}).get("code", "unknown")
+                if isinstance(candidate, str) and re.fullmatch(r"[a-z0-9_-]{1,80}", candidate):
+                    error_code = candidate
+            except (ValueError, TypeError, AttributeError):
+                pass
+        log.warning("Groq narration fallback: %s status=%s code=%s", type(exc).__name__, getattr(exc, "code", "n/a"), error_code)
         return {"text": fallback, "source": "template"}
