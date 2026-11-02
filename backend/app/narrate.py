@@ -1,6 +1,7 @@
 """Optional Groq narration; deterministic replay remains the source of truth."""
 import hashlib
 import json
+import logging
 import os
 import re
 import urllib.request
@@ -11,6 +12,7 @@ Use ONLY the facts provided. Never compute or change any numbers. Never invent e
 Mention the points change exactly as given. Max 25 words. No hashtags. At most one emoji.
 Perspective: "aapki team", "aapka captain"."""
 CACHE = {}
+log = logging.getLogger("my_team_live.narration")
 
 
 def configured():
@@ -44,5 +46,7 @@ def narrate(facts, fallback):
             CACHE.clear()
         CACHE[cache_key] = result
         return result
-    except Exception:
+    except Exception as exc:
+        # Log only the failure category/status, never the key or model response.
+        log.warning("Groq narration fallback: %s status=%s", type(exc).__name__, getattr(exc, "code", "n/a"))
         return {"text": fallback, "source": "template"}
