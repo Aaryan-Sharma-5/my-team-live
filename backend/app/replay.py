@@ -1,0 +1,43 @@
+from .ingest import load_match, normalize
+from .scoring import score_event
+
+
+def build_replay(xi, captain, vice_captain):
+    state = {"totals": {p: 0.0 for p in xi}, "runs": {}, "wickets": {}, "faced": set()}
+    items = []
+    quiet = 0
+    for event in normalize(load_match()):
+        deltas = score_event(event, state, xi, captain, vice_captain)
+        for delta in deltas:
+            state["totals"][delta["player"]] += delta["final_points"]
+        batter = event["batter"]
+        state["runs"][batter] = state["runs"].get(batter, 0) + event["runs_batter"]
+        if event["extra_type"] != "wide":
+            state["faced"].add(batter)
+        wicket = event["wicket"]
+        if wicket and wicket["kind"] in {"bowled", "caught", "caught and bowled", "lbw", "stumped", "hit wicket"}:
+            bowler = event["bowler"]
+            state["wickets"][bowler] = state["wickets"].get(bowler, 0) + 1
+        relevant = bool(deltas) or bool(event["wicket"] and event["wicket"]["player_out"] in xi)
+        quiet = 0 if relevant else quiet + 1
+        if quiet >= 12:
+            relevant, quiet = True, 0
+            tag = "quiet"
+        elif event["wicket"] and event["wicket"]["player_out"] in (captain, vice_captain):
+            tag = "danger"
+        elif any(d["reason_code"].endswith("runs") or d["reason_code"].endswith("wickets") for d in deltas):
+            tag = "milestone"
+        elif event["wicket"] and relevant:
+            tag = "wicket"
+        elif (event["is_four"] or event["is_six"]) and relevant:
+            tag = "boundary"
+        elif any(d["player"] == captain for d in deltas):
+            tag = "captain"
+        else:
+            tag = "quiet"
+        delta = round(sum(d["final_points"] for d in deltas), 1)
+        total = round(sum(state["totals"].values()), 1)
+        text = f"{event['batter']} vs {event['bowler']}: {delta:+g} points. Aapki team ka total {total:g}." if relevant and tag != "quiet" else f"Aapki team ka total {total:g} points."
+        items.append({"seq": event["seq"], "match_state": {"innings": event["innings"], "over": f"{event['over']}.{event['ball']}", "score": event["score_after"], "target": event["target"]},
+            "event": event, "deltas": deltas, "team_total_after": total, "player_totals_after": state["totals"].copy(), "relevant": relevant, "tag": tag, "template_text": text})
+    return {"items": items, "final": {"team_total": total, "player_totals": state["totals"], "top_mover": max(xi, key=lambda p: state["totals"][p])}}
