@@ -19,3 +19,15 @@ def test_illegal_delivery_does_not_advance_ball():
     for a, b in zip(events, events[1:]):
         if a["extra_type"] in ("wide", "noball") and a["innings"] == b["innings"] and a["over"] == b["over"]:
             assert a["ball"] == b["ball"]
+
+
+def test_completed_overs_use_legal_ball_count():
+    events = normalize(load_match())
+    first = [e for e in events if e['innings'] == 1]
+    second = [e for e in events if e['innings'] == 2]
+    assert first[-1]['overs_completed'] == '20.0'
+    assert second[-1]['overs_completed'] == '15.0'
+    assert first[5]['overs_completed'] == '1.0'
+    for a, b in zip(events, events[1:]):
+        if a['innings'] == b['innings'] and b['extra_type'] in ('wide', 'noball'):
+            assert a['overs_completed'] == b['overs_completed']

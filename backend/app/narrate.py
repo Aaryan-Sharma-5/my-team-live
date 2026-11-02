@@ -10,9 +10,9 @@ SYSTEM = """You write one-line live updates for a cricket fan tracking their fan
 Language: casual Hinglish in Roman script, like a friend texting during the match.
 Use ONLY the facts provided. Never compute or change any numbers. Never invent events or players.
 Mention the points change exactly as given. Max 25 words. No hashtags. At most one emoji.
-The points change is for the whole fantasy team, not necessarily one player.
+team_points_delta is the combined change for the whole fantasy team, not the points earned by any individual. The breakdown lists each player's change. When more than one player is involved, avoid attributing the team total to any single player. If a batter and bowler are both in the XI, you may mention mixed feelings without inventing facts.
 Mention no other numbers, including score, runs, over, target, or totals.
-Do not call a player captain or vice-captain unless their supplied role says so.
+Do not call a player captain or vice-captain unless their role in the breakdown says so.
 Perspective: "aapki team", "aapka captain"."""
 CACHE = {}
 log = logging.getLogger("my_team_live.narration")
@@ -22,11 +22,20 @@ def configured():
     return bool(os.getenv("GROQ_API_KEY"))
 
 
+def cache_key_for(facts):
+    payload = json.dumps(facts, sort_keys=True, ensure_ascii=False)
+    return hashlib.sha256(payload.encode()).hexdigest()
+
+
+def cached_narration(facts):
+    return CACHE.get(cache_key_for(facts))
+
+
 def narrate(facts, fallback):
     if not configured():
         return {"text": fallback, "source": "template"}
     payload = json.dumps(facts, sort_keys=True, ensure_ascii=False)
-    cache_key = hashlib.sha256(payload.encode()).hexdigest()
+    cache_key = cache_key_for(facts)
     if cache_key in CACHE:
         return CACHE[cache_key]
     request = urllib.request.Request(
@@ -41,10 +50,13 @@ def narrate(facts, fallback):
         with urllib.request.urlopen(request, timeout=3) as response:
             data = json.load(response)
         text = data["choices"][0]["message"]["content"].strip()
-        points = str(facts["points_delta"])
+        points = str(facts["team_points_delta"])
         numbers = re.findall(r"(?<![\w.])[+-]?\d+(?:\.\d+)?", text)
-        wrong_role = facts.get("role") == "regular" and re.search(r"\b(?:captain|kaptaan|skipper|vice)\b", text, re.IGNORECASE)
-        if len(text.split()) > 25 or numbers != [points] or wrong_role:
+        roles = {p.get("role") for p in facts.get("breakdown", [])}
+        wrong_role = not roles.intersection({"captain", "vice-captain"}) and re.search(r"\b(?:captain|kaptaan|skipper|vice)\b", text, re.IGNORECASE)
+        # A missing plus sign is harmless; a missing minus sign is not.
+        allowed = {points} | ({points.lstrip('+')} if not points.startswith('-') else set())
+        if len(text.split()) > 25 or len(numbers) != 1 or numbers[0] not in allowed or wrong_role:
             raise ValueError("Narration failed validation")
         result = {"text": text, "source": "ai"}
         if len(CACHE) >= 1000:

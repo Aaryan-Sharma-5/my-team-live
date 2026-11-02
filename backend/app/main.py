@@ -1,6 +1,8 @@
 import json
 import os
+import ipaddress
 import time
+from threading import Lock
 from collections import defaultdict, deque
 from pathlib import Path
 from fastapi import FastAPI, HTTPException, Request
@@ -10,7 +12,7 @@ from pydantic import BaseModel
 from .ingest import load_match
 from .replay import build_replay
 from .scoring import RULES
-from .narrate import configured, narrate
+from .narrate import configured, narrate, cached_narration
 
 app = FastAPI(title="My Team Live")
 origins = [origin.strip() for origin in os.getenv("ALLOWED_ORIGINS", "").split(",") if origin.strip()]
@@ -33,7 +35,7 @@ class Narration(BaseModel):
 @app.get("/api/match")
 def match():
     info = load_match()["info"]
-    return {key: info[key] for key in ("teams", "players", "dates", "venue", "event")}
+    return {key: info[key] for key in ("teams", "players", "dates", "venue", "event", "outcome")}
 
 
 @app.get("/api/rules")
@@ -62,19 +64,41 @@ def health():
 
 
 RATE = defaultdict(deque)
+RATE_LOCK = Lock()
+LIMIT = 120
+
+
+def client_ip(request):
+    # Render documents that Cloudflare overwrites this header at its edge.
+    # Never trust a client-supplied forwarded chain in local deployments.
+    candidate = request.headers.get("cf-connecting-ip", "") if os.getenv("RENDER") else ""
+    try:
+        return str(ipaddress.ip_address(candidate))
+    except ValueError:
+        return request.client.host if request.client else "unknown"
+
+
 @app.post("/api/narrate")
 def narration(body: Narration, request: Request):
     fallback = {"text": body.template_text, "source": "template"}
     if not configured() or body.facts.get("tag") not in {"boundary", "wicket", "milestone", "captain", "danger"}:
         return fallback
+    cached = cached_narration(body.facts)
+    if cached:
+        return cached
     now = time.monotonic()
-    ip = request.client.host if request.client else "unknown"
-    timestamps = RATE[ip]
-    while timestamps and now - timestamps[0] > 60:
-        timestamps.popleft()
-    if len(timestamps) >= 30:
-        return fallback
-    timestamps.append(now)
+    ip = client_ip(request)
+    with RATE_LOCK:
+        timestamps = RATE[ip]
+        while timestamps and now - timestamps[0] >= 60:
+            timestamps.popleft()
+        if len(timestamps) >= LIMIT:
+            return fallback
+        timestamps.append(now)
+        if len(RATE) > 2000:
+            for key in list(RATE):
+                if not RATE[key] or now - RATE[key][-1] >= 60:
+                    del RATE[key]
     return narrate(body.facts, body.template_text)
 
 

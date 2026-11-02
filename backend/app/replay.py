@@ -45,6 +45,6 @@ def build_replay(xi, captain, vice_captain):
             text = f"Dhyaan do: {event['wicket']['player_out']} out ho gaye. Aapki team ko {delta:+g} points."
         else:
             text = f"{event['batter']} vs {event['bowler']}: aapki team ko {delta:+g} points. Total {total:g}."
-        items.append({"seq": event["seq"], "match_state": {"innings": event["innings"], "over": f"{event['over']}.{event['ball']}", "score": event["score_after"], "target": event["target"]},
+        items.append({"seq": event["seq"], "match_state": {"innings": event["innings"], "over": event["overs_completed"], "score": event["score_after"], "target": event["target"]},
             "event": event, "deltas": deltas, "team_total_after": total, "player_totals_after": state["totals"].copy(), "relevant": relevant, "tag": tag, "template_text": text})
     return {"items": items, "final": {"team_total": total, "player_totals": state["totals"], "top_mover": max(xi, key=lambda p: state["totals"][p])}}

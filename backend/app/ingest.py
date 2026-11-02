@@ -15,7 +15,7 @@ def normalize(match):
     for innings_number, innings in enumerate((i for i in match["innings"] if not i.get("super_over")), 1):
         if innings_number > 2:
             break
-        runs = wickets = 0
+        runs = wickets = innings_legal = 0
         for over in innings["overs"]:
             legal = 0
             for delivery in over["deliveries"]:
@@ -23,6 +23,7 @@ def normalize(match):
                 ball = legal + 1
                 if "wides" not in extras and "noballs" not in extras:
                     legal += 1
+                    innings_legal += 1
                 runs += delivery["runs"]["total"]
                 raw_wickets = delivery.get("wickets", [])
                 wickets += sum(w["kind"] not in NON_DISMISSALS for w in raw_wickets)
@@ -34,6 +35,6 @@ def normalize(match):
                     "runs_batter": batter_runs, "runs_extras": delivery["runs"]["extras"],
                     "extra_type": next((name for key, name in (("wides", "wide"), ("noballs", "noball"), ("byes", "bye"), ("legbyes", "legbye")) if key in extras), None),
                     "is_four": batter_runs == 4 and not delivery.get("non_boundary", False), "is_six": batter_runs == 6 and not delivery.get("non_boundary", False),
-                    "wicket": wicket, "score_after": f"{runs}/{wickets}",
+                    "wicket": wicket, "score_after": f"{runs}/{wickets}", "overs_completed": f"{innings_legal // 6}.{innings_legal % 6}",
                     "target": innings.get("target", {}).get("runs") if innings_number == 2 else None})
     return events
