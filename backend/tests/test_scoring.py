@@ -1,6 +1,7 @@
 from backend.app.scoring import score_event
 import pytest
 from fastapi import HTTPException
+from pydantic import ValidationError
 from backend.app.main import default_team, replay, Team
 from backend.app.replay import build_replay
 
@@ -51,9 +52,8 @@ def test_full_replay_deterministic_and_sums():
 def test_invalid_team():
     t = default_team()
     t["xi"] = t["xi"][:10]
-    with pytest.raises(HTTPException) as exc:
-        replay(Team(**t))
-    assert exc.value.status_code == 422
+    with pytest.raises(ValidationError):
+        Team(**t)
 
 
 def test_vice_captain_six_and_50_100_milestones():

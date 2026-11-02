@@ -11,7 +11,7 @@ def test_cache_is_checked_before_limiter(monkeypatch):
     monkeypatch.setattr(main, 'configured', lambda: True)
     monkeypatch.setattr(main, 'cached_narration', lambda facts: {'text':'cached','source':'ai'})
     main.RATE['1.2.3.4'].extend([1] * main.LIMIT)
-    body = main.Narration(facts={'tag':'wicket'},template_text='fallback')
+    body = main.Narration(team=main.Team(**main.default_team()),seq=121)
     assert main.narration(body, request('1.2.3.4'))['text'] == 'cached'
     assert len(main.RATE['1.2.3.4']) == main.LIMIT
 
@@ -22,7 +22,7 @@ def test_per_ip_limit_and_expiry(monkeypatch):
     monkeypatch.setattr(main, 'cached_narration', lambda facts: None)
     monkeypatch.setattr(main, 'narrate', lambda facts, fallback: {'text':'ai','source':'ai'})
     monkeypatch.setattr(main.time, 'monotonic', lambda: 100.0)
-    body = main.Narration(facts={'tag':'wicket'},template_text='fallback')
+    body = main.Narration(team=main.Team(**main.default_team()),seq=121)
     for _ in range(main.LIMIT):
         assert main.narration(body, request('1.2.3.4'))['source'] == 'ai'
     assert main.narration(body, request('1.2.3.4'))['source'] == 'template'

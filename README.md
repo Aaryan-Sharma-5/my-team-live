@@ -1,6 +1,6 @@
 # My Team Live
 
-A work-in-progress fantasy cricket replay. The match is a replay and uses simplified scoring; it is not live Dream11 data.
+A personalized fantasy cricket replay that shows how match events affect your XI. It uses simplified scoring and is not live Dream11 data.
 
 ## Match source
 
@@ -23,7 +23,7 @@ python -m uvicorn backend.app.main:app --reload
 
 Open http://127.0.0.1:8000. The app serves the built frontend and API together. To work on the frontend separately, run `npm run dev` in `frontend` while the API runs on port 8000.
 
-Run the backend checks with `python -m pytest backend/tests -q` (pytest is required for tests).
+Run the backend checks with `python -m pytest backend/tests -q` (pytest is required for tests), and frontend checks with `npm test` from `frontend`. The frontend build also runs TypeScript type checking.
 
 ## Architecture and scoring
 

@@ -4,14 +4,17 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tailwindcss -i ./src/tailwind.css -o ./src/generated.css --minify && vite build",
-    "dev": "vite"
+    "build": "tsc --noEmit && tailwindcss -i ./src/tailwind.css -o ./src/generated.css --minify && vite build",
+    "dev": "vite",
+    "test": "vitest run"
   },
   "dependencies": {
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.3",
     "vite": "^6.1.0",

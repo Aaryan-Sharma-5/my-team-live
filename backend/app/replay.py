@@ -42,7 +42,9 @@ def build_replay(xi, captain, vice_captain):
         if tag == "quiet":
             text = f"Kuch khaas nahi hua. Aapki team ka total {total:g} points."
         elif tag == "danger":
-            text = f"Dhyaan do: {event['wicket']['player_out']} out ho gaye. Aapki team ko {delta:+g} points."
+            text = f"Dhyaan do: {event['wicket']['player_out']} out ho gaye."
+            if delta:
+                text += f" Aapki team ko {delta:+g} points."
         else:
             text = f"{event['batter']} vs {event['bowler']}: aapki team ko {delta:+g} points. Total {total:g}."
         items.append({"seq": event["seq"], "match_state": {"innings": event["innings"], "over": event["overs_completed"], "score": event["score_after"], "target": event["target"]},
