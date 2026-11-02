@@ -29,6 +29,17 @@ def test_validated_ai_and_invalid_number(monkeypatch):
     assert narration.narrate({"points_delta":"+7"}, "fallback")["source"] == "template"
 
 
+def test_rejects_invented_role_or_extra_numbers(monkeypatch):
+    monkeypatch.setenv("GROQ_API_KEY", "test-key")
+    narration.CACHE.clear()
+    def respond(text):
+        return io.BytesIO(json.dumps({"choices":[{"message":{"content":text}}]}).encode())
+    monkeypatch.setattr(narration.urllib.request, "urlopen", lambda *a, **k: respond("Aapke captain ko +5 points!"))
+    assert narration.narrate({"points_delta":"+5", "role":"regular"}, "fallback")["source"] == "template"
+    monkeypatch.setattr(narration.urllib.request, "urlopen", lambda *a, **k: respond("4 runs aur +5 points!"))
+    assert narration.narrate({"points_delta":"+5", "role":"captain"}, "fallback")["source"] == "template"
+
+
 def test_groq_request_shape(monkeypatch):
     monkeypatch.setenv("GROQ_API_KEY", "test-key")
     narration.CACHE.clear()
