@@ -26,13 +26,13 @@ def test_arbitrary_facts_and_invalid_delivery_rejected():
 
 def test_no_key_uses_server_template(monkeypatch):
     monkeypatch.delenv('GROQ_API_KEY', raising=False)
-    team = Team(**default_team())
+    team = Team(**default_team()).model_copy(update={'captain':'Shubman Gill'})
     result = narration(Narration(team=team, seq=121), SimpleNamespace(client=None, headers={}))
     assert result == {'text': replay(team)['items'][121]['template_text'], 'source':'template'}
 
 
 def test_zero_delta_danger_omits_points():
-    team = Team(**default_team())
+    team = Team(**default_team()).model_copy(update={'captain':'Shubman Gill'})
     event = next(x for x in replay(team)['items'] if x['event']['wicket'] and x['event']['wicket']['player_out'] == 'WP Saha')
     assert event['tag'] == 'danger'
     assert 'points' not in event['template_text']
@@ -42,7 +42,7 @@ def test_zero_delta_does_not_request_ai(monkeypatch):
     from backend.app import main
     monkeypatch.setattr(main, 'configured', lambda: True)
     monkeypatch.setattr(main, 'narrate', lambda *args: pytest.fail('zero-point event called AI'))
-    team = Team(**default_team())
+    team = Team(**default_team()).model_copy(update={'captain':'Shubman Gill'})
     event = next(x for x in replay(team)['items'] if x['event']['wicket'] and x['event']['wicket']['player_out'] == 'WP Saha')
     result = narration(Narration(team=team, seq=event['seq']), SimpleNamespace(client=None, headers={}))
     assert result['source'] == 'template'

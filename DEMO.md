@@ -8,4 +8,4 @@
 
 The simplified scoring omits stumpings, maiden overs and economy-rate points. It is not the official Dream11 scoring system.
 
-In one deployed 10× replay on 2 November 2026, 20 of 60 eligible cards showed AI and 40 used templates. In the second innings, 9 of 25 eligible cards showed AI. Plain run cards intentionally use templates. These counts vary with provider limits, timeouts, validation and cache state; the fallback keeps the whole replay readable.
+For the default XI, 60 narration-eligible deliveries use reviewed Codex pre-generated lines and do not depend on an API call. The feed highlights key moments rather than displaying every scoring ball. For custom teams, live Groq responses can fall back to templates because of provider limits, timeouts or validation. The exact scoring remains deterministic.

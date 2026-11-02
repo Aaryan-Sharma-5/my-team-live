@@ -23,6 +23,8 @@ def build_replay(xi, captain, vice_captain):
         if quiet >= 12:
             relevant, quiet = True, 0
             tag = "quiet"
+        elif event["wicket"] and event["wicket"]["player_out"] in xi and any(d['final_points'] > 0 and d['player'] != event['wicket']['player_out'] for d in deltas):
+            tag = "mixed"
         elif event["wicket"] and (event["wicket"]["player_out"] in (captain, vice_captain) or state["totals"].get(event["wicket"]["player_out"], 0) >= 20):
             tag = "danger"
         elif any(d["reason_code"].endswith("runs") or d["reason_code"].endswith("wickets") for d in deltas):
@@ -41,6 +43,17 @@ def build_replay(xi, captain, vice_captain):
         total = round(sum(state["totals"].values()), 1)
         if tag == "quiet":
             text = f"Kuch khaas nahi hua. Aapki team ka total {total:g} points."
+        elif tag == "mixed":
+            outgoing = event['wicket']['player_out'].split()[-1]
+            gainers = {}
+            for d in deltas:
+                if d['final_points'] > 0 and d['player'] != event['wicket']['player_out']:
+                    gainers[d['player']] = gainers.get(d['player'], 0) + d['final_points']
+            leader = max(gainers, key=gainers.get).split()[-1]
+            if len(gainers) == 1 and delta == next(iter(gainers.values())):
+                text = f"{outgoing} out, par {leader} ke points se team {delta:+g}."
+            else:
+                text = f"{outgoing} out, par doosre contributions ke baad team ka net {delta:+g}."
         elif tag == "danger":
             text = f"Dhyaan do: {event['wicket']['player_out']} out ho gaye."
             if delta:

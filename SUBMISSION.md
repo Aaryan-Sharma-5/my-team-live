@@ -8,5 +8,5 @@ My Team Live replays the 2023 IPL final from the perspective of a chosen XI. Fan
 
 With the default XI, captain Ravindra Jadeja hits a six and a four off the final two balls, adding 26 points as Chennai wins the final. Both come off Mohit Sharma, who is also in the XI, a mixed moment any fan would recognize.
 
-Scoring is deterministic Python code. An optional GPT-OSS 20B integration via Groq turns selected structured match events into short Hinglish updates; a template fallback keeps the replay working without an API key or if the service fails. I used Codex to help build and test the app.
+Scoring is deterministic Python code. Default-team updates were pre-generated with Codex from match facts; custom teams can use GPT-OSS 20B via Groq, with a template fallback if AI is unavailable. I used Codex to help build and test the app.
 

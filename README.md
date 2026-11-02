@@ -31,6 +31,8 @@ Cricsheet JSON → `ingest.py` normalizes deliveries → `scoring.py` calculates
 
 Selected events can be narrated by OpenAI GPT-OSS 20B via Groq and `/api/narrate`; the API key stays on the server. Output is checked for the supplied points figure and word limit. A missing key, timeout, API error, rate limit or failed check returns a deterministic template. The optional integration is configured by setting `GROQ_API_KEY` in the server environment; do not put keys in the frontend or commit them. `ALLOWED_ORIGINS` may be set to comma-separated origins if serving the frontend separately. The default same-origin setup does not need it.
 
+The default XI uses event-specific lines pre-generated with Codex from the recorded match and reviewed against the replay facts; they are labeled **AI (pre-generated)**. They ship with the match, so they do not require an API key or wait for Groq. Modified teams use live Groq when configured, with a template fallback. The saved lines are disabled automatically if the match, default team or scoring rules change. `scripts/precompute.py` can collect live Groq candidates into a separate ignored file; review every line against match facts before shipping it.
+
 The integration and fallback are covered with mocked responses, and a real Groq request was verified on the deployed app. The model's wording is constrained by a prompt and checks on its numbers and role; these checks do not guarantee every generated claim is correct.
 
 ## Container

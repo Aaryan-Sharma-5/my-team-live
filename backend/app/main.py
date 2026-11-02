@@ -1,4 +1,5 @@
 import json
+import hashlib
 import os
 import ipaddress
 import time
@@ -21,6 +22,7 @@ origins = [origin.strip() for origin in os.getenv("ALLOWED_ORIGINS", "").split("
 if origins:
     app.add_middleware(CORSMiddleware, allow_origins=origins, allow_methods=["GET", "POST"], allow_headers=["Content-Type"])
 DATA = Path(__file__).resolve().parents[1] / "data"
+PREGENERATED = DATA / "narrations_default.json"
 
 
 class Team(BaseModel):
@@ -52,6 +54,27 @@ def default_team():
     return json.loads((DATA / "default_xi.json").read_text(encoding="utf-8"))
 
 
+def is_default(team):
+    default = default_team()
+    return set(team.xi) == set(default['xi']) and team.captain == default['captain'] and team.vice_captain == default['vice_captain']
+
+
+@lru_cache(maxsize=1)
+def pre_generated():
+    """Use saved lines only with the exact match, scoring rules and default XI."""
+    try:
+        saved = json.loads(PREGENERATED.read_text(encoding='utf-8'))
+        meta = saved['metadata']
+        default = default_team()
+        match_bytes = json.dumps(load_match(), sort_keys=True, separators=(',', ':')).encode()
+        if (meta['team'] != default or meta['rules'] != RULES or
+                meta['match_sha256'] != hashlib.sha256(match_bytes).hexdigest()):
+            return {}
+        return saved['items']
+    except (OSError, ValueError, KeyError, TypeError):
+        return {}
+
+
 def validate_team(team: Team):
     pool = {p for players in load_match()["info"]["players"].values() for p in players}
     if len(team.xi) != 11 or len(set(team.xi)) != 11 or not set(team.xi) <= pool:
@@ -68,7 +91,12 @@ def cached_replay(xi, captain, vice_captain):
 @app.post("/api/replay")
 def replay(team: Team):
     validate_team(team)
-    return cached_replay(tuple(team.xi), team.captain, team.vice_captain)
+    timeline = cached_replay(tuple(team.xi), team.captain, team.vice_captain)
+    if is_default(team):
+        saved = pre_generated()
+        items = [{**item, 'narration': {'text': saved[str(item['seq'])], 'source': 'ai-pre-generated'}} if str(item['seq']) in saved else item for item in timeline['items']]
+        return {**timeline, 'items': items}
+    return timeline
 
 
 @app.get("/api/health")
@@ -100,7 +128,12 @@ def narration(body: Narration, request: Request):
     item = timeline[body.seq]
     facts = narration_facts(item, body.team)
     fallback = {"text": item['template_text'], "source": "template"}
-    if not configured() or not item['relevant'] or sum(d['final_points'] for d in item['deltas']) == 0 or item['tag'] not in {"boundary", "wicket", "milestone", "captain", "danger"}:
+    if is_default(body.team):
+        saved = pre_generated()
+        if str(body.seq) in saved:
+            return {"text": saved[str(body.seq)], "source": "ai-pre-generated"}
+        return fallback
+    if not configured() or not item['relevant'] or sum(d['final_points'] for d in item['deltas']) == 0 or item['tag'] not in {"boundary", "wicket", "milestone", "captain", "danger", "mixed"}:
         return fallback
     cached = cached_narration(facts)
     if cached:

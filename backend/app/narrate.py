@@ -9,6 +9,7 @@ import urllib.request
 SYSTEM = """You write one-line live updates for a cricket fan tracking their fantasy team.
 Language: casual Hinglish in Roman script, like a friend texting during the match.
 Use ONLY the facts provided. Never compute or change any numbers. Never invent events or players.
+Avoid generic filler or repeating the same opener. Refer to the actual event and the fan's team.
 Mention the points change exactly as given. Max 25 words. No hashtags. At most one emoji.
 team_points_delta is the combined change for the whole fantasy team, not the points earned by any individual. The breakdown lists each player's change. When more than one player is involved, avoid attributing the team total to any single player. If a batter and bowler are both in the XI, you may mention mixed feelings without inventing facts.
 Mention no other numbers, including score, runs, over, target, or totals.
@@ -60,7 +61,8 @@ def narrate(facts, fallback):
         numbers = re.findall(r"(?<![\w.])[+-]?\d+(?:\.\d+)?", text)
         roles = {p.get("role") for p in facts.get("breakdown", [])}
         wrong_role = not roles.intersection({"captain", "vice-captain"}) and re.search(r"\b(?:captain|kaptaan|skipper|vice)\b", text, re.IGNORECASE)
-        wicket_claim = facts.get("tag") in {"wicket", "danger"} and re.search(r"\b(?:stump\w*|catch\w*|caught|keeper|pakad\w*)\b", text, re.IGNORECASE)
+        is_wicket = facts.get("tag") in {"wicket", "danger", "mixed"} or " dismissed " in facts.get("event", "")
+        wicket_claim = is_wicket and re.search(r"\b(?:stump\w*|catch\w*|caught|keeper|pakad\w*)\b", text, re.IGNORECASE)
         contributing = [p for p in facts.get("breakdown", []) if p.get("points")]
         multi_person = len(contributing) > 1
         named_player = multi_person and any(

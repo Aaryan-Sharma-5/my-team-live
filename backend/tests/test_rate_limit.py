@@ -9,6 +9,7 @@ def request(ip, headers=None):
 def test_cache_is_checked_before_limiter(monkeypatch):
     main.RATE.clear()
     monkeypatch.setattr(main, 'configured', lambda: True)
+    monkeypatch.setattr(main, 'is_default', lambda team: False)
     monkeypatch.setattr(main, 'cached_narration', lambda facts: {'text':'cached','source':'ai'})
     main.RATE['1.2.3.4'].extend([1] * main.LIMIT)
     body = main.Narration(team=main.Team(**main.default_team()),seq=121)
@@ -19,6 +20,7 @@ def test_cache_is_checked_before_limiter(monkeypatch):
 def test_per_ip_limit_and_expiry(monkeypatch):
     main.RATE.clear()
     monkeypatch.setattr(main, 'configured', lambda: True)
+    monkeypatch.setattr(main, 'is_default', lambda team: False)
     monkeypatch.setattr(main, 'cached_narration', lambda facts: None)
     monkeypatch.setattr(main, 'narrate', lambda facts, fallback: {'text':'ai','source':'ai'})
     monkeypatch.setattr(main.time, 'monotonic', lambda: 100.0)
