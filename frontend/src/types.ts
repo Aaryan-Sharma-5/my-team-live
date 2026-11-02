@@ -3,7 +3,8 @@ export type Delta = {player:string;reason_text:string;base_points:number;multipl
 export type Narration = {text:string;source:string};
 export type Item = {seq:number;match_state:{innings:number;over:string;score:string;target:number|null};event:{over:number;batter:string;bowler:string;runs_batter:number;extra_type:string|null;wicket:{player_out:string;kind:string}|null};deltas:Delta[];player_totals_after:Record<string,number>;team_total_after:number;relevant:boolean;tag:string;template_text:string;narration?:Narration};
 export type Replay = {items:Item[];final:{team_total:number;player_totals:Record<string,number>;top_mover:string}};
-export const shortName = (name:string) => name.split(' ').at(-1) ?? name;
+const DISPLAY:Record<string,string>={'Rashid Khan':'Rashid','MM Sharma':'Mohit','HH Pandya':'Hardik'};
+export const shortName = (name:string) => DISPLAY[name] ?? name.split(' ').at(-1) ?? name;
 export const fmt = (n:number) => Number(n.toFixed(1)).toString();
 export const signed = (n:number) => `${n>0?'+':''}${fmt(n)}`;
 export const change = (item:Item) => item.deltas.reduce((sum,d)=>sum+d.final_points,0);
