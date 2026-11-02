@@ -1,4 +1,4 @@
-"""Optional Anthropic narration; deterministic replay remains the source of truth."""
+"""Optional Groq narration; deterministic replay remains the source of truth."""
 import hashlib
 import json
 import os
@@ -14,7 +14,7 @@ CACHE = {}
 
 
 def configured():
-    return bool(os.getenv("ANTHROPIC_API_KEY"))
+    return bool(os.getenv("GROQ_API_KEY"))
 
 
 def narrate(facts, fallback):
@@ -25,15 +25,17 @@ def narrate(facts, fallback):
     if cache_key in CACHE:
         return CACHE[cache_key]
     request = urllib.request.Request(
-        "https://api.anthropic.com/v1/messages",
-        data=json.dumps({"model": "claude-haiku-5-5", "max_tokens": 100, "system": SYSTEM,
-                         "messages": [{"role": "user", "content": payload}]}).encode(),
-        headers={"content-type": "application/json", "anthropic-version": "2023-06-01",
-                 "x-api-key": os.environ["ANTHROPIC_API_KEY"]}, method="POST")
+        "https://api.groq.com/openai/v1/chat/completions",
+        data=json.dumps({"model": "openai/gpt-oss-20b", "max_completion_tokens": 512,
+                         "reasoning_effort": "low",
+                         "messages": [{"role": "system", "content": SYSTEM},
+                                      {"role": "user", "content": payload}]}).encode(),
+        headers={"content-type": "application/json",
+                 "authorization": "Bearer " + os.environ["GROQ_API_KEY"]}, method="POST")
     try:
         with urllib.request.urlopen(request, timeout=3) as response:
             data = json.load(response)
-        text = " ".join(block.get("text", "") for block in data.get("content", []) if block.get("type") == "text").strip()
+        text = data["choices"][0]["message"]["content"].strip()
         points = str(facts["points_delta"])
         if len(text.split()) > 25 or not re.search(r"(?<![\d.])" + re.escape(points) + r"(?![\d.])", text):
             raise ValueError("Narration failed validation")

@@ -29,9 +29,9 @@ Run the backend checks with `python -m pytest backend/tests -q` (pytest is requi
 
 Cricsheet JSON → `ingest.py` normalizes deliveries → `scoring.py` calculates deterministic point deltas → `replay.py` builds the timeline → React plays the timeline locally. `GET /api/rules` exposes the same rules dictionary used by scoring. The source file lists the simplified rules and multipliers; they are also visible inside the app. They are not official Dream11 rules.
 
-Selected events can be narrated by Claude Haiku 5.5 via `/api/narrate`; the API key stays on the server. Output is checked for the supplied points figure and word limit. A missing key, timeout, API error, rate limit or failed check returns a deterministic template. The optional integration is configured by setting `ANTHROPIC_API_KEY` in the server environment; do not put keys in the frontend or commit them. `ALLOWED_ORIGINS` may be set to comma-separated origins if serving the frontend separately. The default same-origin setup does not need it.
+Selected events can be narrated by OpenAI GPT-OSS 20B via Groq and `/api/narrate`; the API key stays on the server. Output is checked for the supplied points figure and word limit. A missing key, timeout, API error, rate limit or failed check returns a deterministic template. The optional integration is configured by setting `GROQ_API_KEY` in the server environment; do not put keys in the frontend or commit them. `ALLOWED_ORIGINS` may be set to comma-separated origins if serving the frontend separately. The default same-origin setup does not need it.
 
-The API integration and fallback are covered with mocked responses, but a real Anthropic request has not yet been verified with a key. The model's wording is constrained by a prompt and a basic number check; this is not a guarantee that every generated claim is correct.
+The API integration and fallback are covered with mocked responses, but a real Groq request has not yet been verified with a key. The model's wording is constrained by a prompt and a basic number check; this is not a guarantee that every generated claim is correct.
 
 ## Container
 
