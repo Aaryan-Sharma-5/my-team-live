@@ -23,7 +23,7 @@ def build_replay(xi, captain, vice_captain):
         if quiet >= 12:
             relevant, quiet = True, 0
             tag = "quiet"
-        elif event["wicket"] and event["wicket"]["player_out"] in (captain, vice_captain):
+        elif event["wicket"] and (event["wicket"]["player_out"] in (captain, vice_captain) or state["totals"].get(event["wicket"]["player_out"], 0) >= 20):
             tag = "danger"
         elif any(d["reason_code"].endswith("runs") or d["reason_code"].endswith("wickets") for d in deltas):
             tag = "milestone"
@@ -33,11 +33,18 @@ def build_replay(xi, captain, vice_captain):
             tag = "boundary"
         elif any(d["player"] == captain for d in deltas):
             tag = "captain"
+        elif deltas:
+            tag = "run"
         else:
             tag = "quiet"
         delta = round(sum(d["final_points"] for d in deltas), 1)
         total = round(sum(state["totals"].values()), 1)
-        text = f"{event['batter']} vs {event['bowler']}: {delta:+g} points. Aapki team ka total {total:g}." if relevant and tag != "quiet" else f"Aapki team ka total {total:g} points."
+        if tag == "quiet":
+            text = f"Kuch khaas nahi hua. Aapki team ka total {total:g} points."
+        elif tag == "danger":
+            text = f"Dhyaan do: {event['wicket']['player_out']} out ho gaye. Aapki team ko {delta:+g} points."
+        else:
+            text = f"{event['batter']} vs {event['bowler']}: aapki team ko {delta:+g} points. Total {total:g}."
         items.append({"seq": event["seq"], "match_state": {"innings": event["innings"], "over": f"{event['over']}.{event['ball']}", "score": event["score_after"], "target": event["target"]},
             "event": event, "deltas": deltas, "team_total_after": total, "player_totals_after": state["totals"].copy(), "relevant": relevant, "tag": tag, "template_text": text})
     return {"items": items, "final": {"team_total": total, "player_totals": state["totals"], "top_mover": max(xi, key=lambda p: state["totals"][p])}}

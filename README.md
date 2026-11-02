@@ -8,8 +8,23 @@ Cricsheet match **1370353**, Gujarat Titans vs Chennai Super Kings, IPL final, 2
 
 Current ingestion check: 216 deliveries, 9 dismissals, 31 fours and 19 sixes. Final scores: Gujarat 214/4; Chennai 171/5. The default team is a demo selection, not a recommendation or an official fantasy lineup.
 
+## Local development
+
+Requires Python 3.11+ and Node.js. From the project root:
+
+```sh
+python -m pip install -r backend/requirements.txt
+cd frontend
+npm ci
+npm run build
+cd ..
+python -m uvicorn backend.app.main:app --reload
+```
+
+Open http://127.0.0.1:8000. The app serves the built frontend and API together. To work on the frontend separately, run `npm run dev` in `frontend` while the API runs on port 8000.
+
+Run the backend checks with `python -m pytest backend/tests -q` (pytest is required for tests).
+
 ## Current status
 
-Milestone 1: source data, normalized deliveries, default team and scoring values. Later milestones will add replay scoring, interface and optional AI narration.
-
-Run the ingestion checks with `python -m pytest backend/tests/test_ingest.py -q`.
+The deterministic replay and template-only interface are in progress. AI narration and deployment have not been completed.

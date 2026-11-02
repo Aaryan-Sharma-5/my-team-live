@@ -54,3 +54,43 @@ def test_invalid_team():
     with pytest.raises(HTTPException) as exc:
         replay(Team(**t))
     assert exc.value.status_code == 422
+
+
+def test_vice_captain_six_and_50_100_milestones():
+    s = state()
+    for before, expected in ((49, 8), (99, 16)):
+        s["runs"]["B"] = before
+        ds = score_event(event(batter="B", bowler="A", runs_batter=6, is_six=True), s, ["A", "B", "C"], "A", "B")
+        assert sum(d["final_points"] for d in ds) == (6 + 2 + expected) * 1.5
+
+
+@pytest.mark.parametrize("kind,bonus", [("bowled", 8), ("lbw", 8), ("caught", 0)])
+def test_bowler_wicket_and_haul(kind, bonus):
+    s = state()
+    s["wickets"]["B"] = 2
+    ds = score(event(wicket={"kind": kind, "player_out": "A", "fielders": ["C"] if kind == "caught" else []}), s)
+    bowler = sum(d["final_points"] for d in ds if d["player"] == "B")
+    assert bowler == (25 + bonus + 4) * 1.5
+    if kind == "caught":
+        assert any(d["reason_code"] == "catch" and d["player"] == "C" for d in ds)
+    s["wickets"]["B"] = 4
+    ds = score(event(wicket={"kind": kind, "player_out": "A", "fielders": []}), s)
+    assert any(d["reason_code"] == "5_wickets" for d in ds)
+
+
+def test_wide_and_retired_hurt_do_not_create_duck():
+    s = state()
+    assert not score(event(extra_type="wide", wicket={"kind":"run out", "player_out":"A", "fielders":[]}), s)
+    assert not score(event(wicket={"kind":"retired hurt", "player_out":"A", "fielders":[]}), s)
+
+
+def test_switching_captain_changes_only_affected_multipliers():
+    t = default_team()
+    original = build_replay(**t)["final"]["player_totals"]
+    other = dict(t, captain="DP Conway")
+    changed = build_replay(**other)["final"]["player_totals"]
+    for player in t["xi"]:
+        if player not in {t["captain"], "DP Conway"}:
+            assert original[player] == changed[player]
+    assert changed[t["captain"]] * 2 == original[t["captain"]]
+    assert changed["DP Conway"] == original["DP Conway"] * 2

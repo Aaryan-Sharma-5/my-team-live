@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 from fastapi import FastAPI, HTTPException
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from .ingest import load_match
 from .replay import build_replay
@@ -40,3 +41,8 @@ def replay(team: Team):
     if team.captain not in team.xi or team.vice_captain not in team.xi or team.captain == team.vice_captain:
         raise HTTPException(422, "Captain and vice-captain must be different players in your XI.")
     return build_replay(team.xi, team.captain, team.vice_captain)
+
+
+DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
+if DIST.is_dir():
+    app.mount("/", StaticFiles(directory=DIST, html=True), name="frontend")
