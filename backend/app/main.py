@@ -1,9 +1,11 @@
 import json
+import os
 import time
 from collections import defaultdict, deque
 from pathlib import Path
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from .ingest import load_match
 from .replay import build_replay
@@ -11,6 +13,9 @@ from .scoring import RULES
 from .narrate import configured, narrate
 
 app = FastAPI(title="My Team Live")
+origins = [origin.strip() for origin in os.getenv("ALLOWED_ORIGINS", "").split(",") if origin.strip()]
+if origins:
+    app.add_middleware(CORSMiddleware, allow_origins=origins, allow_methods=["GET", "POST"], allow_headers=["Content-Type"])
 DATA = Path(__file__).resolve().parents[1] / "data"
 
 

@@ -94,3 +94,19 @@ def test_switching_captain_changes_only_affected_multipliers():
             assert original[player] == changed[player]
     assert changed[t["captain"]] * 2 == original[t["captain"]]
     assert changed["DP Conway"] == original["DP Conway"] * 2
+
+
+def test_scoring_does_not_mutate_input_state():
+    from copy import deepcopy
+    s = state()
+    before = deepcopy(s)
+    score(event(runs_batter=4, is_four=True), s)
+    assert s == before
+
+
+def test_wide_and_noball_extras_do_not_add_batter_runs():
+    # Runs actually hit off a no-ball still count; extras alone do not.
+    s = state()
+    assert score(event(extra_type="wide"), s) == []
+    assert score(event(extra_type="noball"), s) == []
+    assert sum(d["final_points"] for d in score(event(extra_type="noball", runs_batter=1), s)) == 2

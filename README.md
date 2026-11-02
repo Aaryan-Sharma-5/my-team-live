@@ -25,6 +25,23 @@ Open http://127.0.0.1:8000. The app serves the built frontend and API together. 
 
 Run the backend checks with `python -m pytest backend/tests -q` (pytest is required for tests).
 
-## Current status
+## Architecture and scoring
 
-The deterministic replay and template-only interface are in progress. AI narration and deployment have not been completed.
+Cricsheet JSON → `ingest.py` normalizes deliveries → `scoring.py` calculates deterministic point deltas → `replay.py` builds the timeline → React plays the timeline locally. `GET /api/rules` exposes the same rules dictionary used by scoring. The source file lists the simplified rules and multipliers; they are also visible inside the app. They are not official Dream11 rules.
+
+Selected events can be narrated by Claude Haiku 5.5 via `/api/narrate`; the API key stays on the server. Output is checked for the supplied points figure and word limit. A missing key, timeout, API error, rate limit or failed check returns a deterministic template. The optional integration is configured by setting `ANTHROPIC_API_KEY` in the server environment; do not put keys in the frontend or commit them. `ALLOWED_ORIGINS` may be set to comma-separated origins if serving the frontend separately. The default same-origin setup does not need it.
+
+The API integration and fallback are covered with mocked responses, but a real Anthropic request has not yet been verified with a key. The model's wording is constrained by a prompt and a basic number check; this is not a guarantee that every generated claim is correct.
+
+## Container
+
+With Docker running:
+
+```sh
+docker build -t my-team-live .
+docker run --rm -p 8000:8000 my-team-live
+```
+
+For optional narration, pass the key as an environment variable using your hosting provider's secret settings. The container serves one public port, honoring `PORT` when supplied. A hosting account and a public deployment are still needed.
+
+See [SUBMISSION.md](SUBMISSION.md) and [DEMO.md](DEMO.md) for the draft note and demo outline.
