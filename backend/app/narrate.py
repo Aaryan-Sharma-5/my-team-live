@@ -15,6 +15,7 @@ Mention no other numbers, including score, runs, over, target, or totals.
 Do not call a player captain or vice-captain unless their role in the breakdown says so.
 Do not attribute a catch or stumping to a bowler unless the facts explicitly say caught and bowled.
 For wicket events involving multiple players, describe the wicket and combined team points; never attribute the combined points to an individual.
+For every wicket or danger update, say only that a wicket fell and the team points change; do not describe catches or stumpings. For changes involving multiple players, do not name a player or assign the total to one person.
 For example, if the team change is +5, a valid line is: "Wah, aapki team ko +5 points mile!"
 Perspective: "aapki team", "aapka captain"."""
 CACHE = {}
@@ -59,9 +60,17 @@ def narrate(facts, fallback):
         numbers = re.findall(r"(?<![\w.])[+-]?\d+(?:\.\d+)?", text)
         roles = {p.get("role") for p in facts.get("breakdown", [])}
         wrong_role = not roles.intersection({"captain", "vice-captain"}) and re.search(r"\b(?:captain|kaptaan|skipper|vice)\b", text, re.IGNORECASE)
+        wicket_claim = facts.get("tag") in {"wicket", "danger"} and re.search(r"\b(?:stump\w*|catch\w*|caught|keeper|pakad\w*)\b", text, re.IGNORECASE)
+        contributing = [p for p in facts.get("breakdown", []) if p.get("points")]
+        multi_person = len(contributing) > 1
+        named_player = multi_person and any(
+            any(re.search(r"\b" + re.escape(part) + r"\b", text, re.IGNORECASE) for part in p.get("player", "").split() if len(part) > 2)
+            for p in facts.get("breakdown", [])
+        )
+        missing_team = multi_person and not re.search(r"\bteam\b", text, re.IGNORECASE)
         # A missing plus sign is harmless; a missing minus sign is not.
         allowed = {points} | ({points.lstrip('+')} if not points.startswith('-') else set())
-        if len(text.split()) > 25 or len(numbers) != 1 or numbers[0] not in allowed or wrong_role:
+        if len(text.split()) > 25 or len(numbers) != 1 or numbers[0] not in allowed or wrong_role or wicket_claim or named_player or missing_team:
             raise ValueError("Narration failed validation")
         result = {"text": text, "source": "ai"}
         if len(CACHE) >= 1000:

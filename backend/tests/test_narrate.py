@@ -63,3 +63,17 @@ def test_positive_sign_optional_but_negative_sign_required(monkeypatch):
     monkeypatch.setattr(narration.urllib.request, "urlopen", respond)
     assert narration.narrate({"team_points_delta":"+8"}, "fallback")["source"] == "ai"
     assert narration.narrate({"team_points_delta":"-8"}, "fallback")["source"] == "template"
+
+
+def test_wicket_rejects_invented_fielding_credit_and_multi_player_attribution(monkeypatch):
+    monkeypatch.setenv("GROQ_API_KEY", "test-key")
+    narration.CACHE.clear()
+    def response(text):
+        return io.BytesIO(json.dumps({"choices":[{"message":{"content":text}}]}).encode())
+    monkeypatch.setattr(narration.urllib.request, "urlopen", lambda *a, **k: response("Jadeja ki stumping se team ko +50 points!"))
+    assert narration.narrate({"tag":"wicket", "team_points_delta":"+50", "breakdown":[{"player":"RA Jadeja","role":"captain","points":50}]}, "fallback")["source"] == "template"
+    monkeypatch.setattr(narration.urllib.request, "urlopen", lambda *a, **k: response("Rashid ko +31 points, team khush!"))
+    facts = {"tag":"wicket", "team_points_delta":"+31", "breakdown":[{"player":"Rashid Khan","role":"regular","points":-2},{"player":"M Pathirana","role":"regular","points":25}]}
+    assert narration.narrate(facts, "fallback")["source"] == "template"
+    monkeypatch.setattr(narration.urllib.request, "urlopen", lambda *a, **k: response("Wicket gira, aapki team ko +31 points mile!"))
+    assert narration.narrate(facts, "fallback")["source"] == "ai"
