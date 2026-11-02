@@ -42,6 +42,8 @@ docker build -t my-team-live .
 docker run --rm -p 8000:8000 my-team-live
 ```
 
-For optional narration, pass the key as an environment variable using your hosting provider's secret settings. The container serves one public port, honoring `PORT` when supplied. A hosting account and a public deployment are still needed.
+For optional narration, pass the key as an environment variable using your hosting provider's secret settings. The container serves one public port, honoring `PORT` when supplied.
+
+The public replay is at https://my-team-live.onrender.com/. Render's free instance can take time to wake after inactivity.
 
 See [SUBMISSION.md](SUBMISSION.md) and [DEMO.md](DEMO.md) for the draft note and demo outline.
