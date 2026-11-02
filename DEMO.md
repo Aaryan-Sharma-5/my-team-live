@@ -7,3 +7,5 @@
 5. **Trade-offs and next steps (20 seconds):** One recorded match, no rank or live data, and transparent simplified rules kept the scope testable. With authorized production data, connect the official points engine and live feed, then explore rank changes and timely notifications.
 
 The simplified scoring omits stumpings, maiden overs and economy-rate points. It is not the official Dream11 scoring system.
+
+In one deployed 10× replay on 2 November 2026, 20 of 60 eligible cards showed AI and 40 used templates. In the second innings, 9 of 25 eligible cards showed AI. Plain run cards intentionally use templates. These counts vary with provider limits, timeouts, validation and cache state; the fallback keeps the whole replay readable.

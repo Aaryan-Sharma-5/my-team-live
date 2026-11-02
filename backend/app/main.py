@@ -100,7 +100,7 @@ def narration(body: Narration, request: Request):
     item = timeline[body.seq]
     facts = narration_facts(item, body.team)
     fallback = {"text": item['template_text'], "source": "template"}
-    if not configured() or not item['relevant'] or item['tag'] not in {"boundary", "wicket", "milestone", "captain", "danger"}:
+    if not configured() or not item['relevant'] or sum(d['final_points'] for d in item['deltas']) == 0 or item['tag'] not in {"boundary", "wicket", "milestone", "captain", "danger"}:
         return fallback
     cached = cached_narration(facts)
     if cached:

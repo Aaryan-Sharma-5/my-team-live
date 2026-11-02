@@ -36,3 +36,14 @@ def test_zero_delta_danger_omits_points():
     event = next(x for x in replay(team)['items'] if x['event']['wicket'] and x['event']['wicket']['player_out'] == 'WP Saha')
     assert event['tag'] == 'danger'
     assert 'points' not in event['template_text']
+
+
+def test_zero_delta_does_not_request_ai(monkeypatch):
+    from backend.app import main
+    monkeypatch.setattr(main, 'configured', lambda: True)
+    monkeypatch.setattr(main, 'narrate', lambda *args: pytest.fail('zero-point event called AI'))
+    team = Team(**default_team())
+    event = next(x for x in replay(team)['items'] if x['event']['wicket'] and x['event']['wicket']['player_out'] == 'WP Saha')
+    result = narration(Narration(team=team, seq=event['seq']), SimpleNamespace(client=None, headers={}))
+    assert result['source'] == 'template'
+    assert 'points' not in result['text']
