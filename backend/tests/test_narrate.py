@@ -36,6 +36,7 @@ def test_groq_request_shape(monkeypatch):
         payload = json.loads(request.data)
         assert request.full_url == "https://api.groq.com/openai/v1/chat/completions"
         assert request.get_header("Authorization") == "Bearer test-key"
+        assert request.get_header("User-agent") == "MyTeamLive/1.0"
         assert payload["model"] == "openai/gpt-oss-20b"
         assert timeout == 3
         return io.BytesIO(json.dumps({"choices":[{"message":{"content":"Aapki team ko +12 points!"}}]}).encode())

@@ -32,7 +32,7 @@ def narrate(facts, fallback):
                          "reasoning_effort": "low",
                          "messages": [{"role": "system", "content": SYSTEM},
                                       {"role": "user", "content": payload}]}).encode(),
-        headers={"content-type": "application/json",
+        headers={"content-type": "application/json", "user-agent": "MyTeamLive/1.0",
                  "authorization": "Bearer " + os.environ["GROQ_API_KEY"]}, method="POST")
     try:
         with urllib.request.urlopen(request, timeout=3) as response:
